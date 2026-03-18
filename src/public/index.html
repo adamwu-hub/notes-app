@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notes App</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --border: #e2e8f0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+        }
+        .header {
+            background: var(--card);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        .search-container {
+            position: relative;
+            flex: 1;
+            min-width: 200px;
+        }
+        .search-input {
+            width: 100%;
+            padding-right: 2.5rem; /* Space for the X button */
+            box-sizing: border-box;
+        }
+        .clear-search {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #94a3b8;
+            font-size: 1.25rem;
+            font-weight: bold;
+            display: none; /* Hidden by default */
+            user-select: none;
+        }
+        .clear-search:hover { color: var(--text); }
+
+        select, input, textarea {
+            padding: 0.6rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+        .hidden { display: none !important; }
+
+        /* Note Cards */
+        .notes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        .note-card {
+            background: var(--card);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            position: relative;
+            transition: transform 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+        .note-card:hover { transform: translateY(-2px); }
+        .note-card h3 { margin: 0 0 0.75rem 0; padding-right: 3rem; font-size: 1.2rem; }
+        .note-card p { color: #64748b; font-size: 0.95rem; flex-grow: 1; margin-bottom: 1rem; }
+        
+        .note-actions {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            color: #94a3b8;
+        }
+        .icon-btn:hover { background: #f1f5f9; color: var(--primary); }
+        .icon-btn.delete:hover { color: var(--danger); }
+
+        /* Editor View */
+        .editor-view {
+            background: var(--card);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .full-width { width: 100%; box-sizing: border-box; margin-bottom: 1rem; }
+        textarea { height: 300px; resize: vertical; }
+
+        .attachments { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 1rem 0; }
+        .attachment-item { width: 120px; height: 120px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
+
+        button {
+            padding: 0.6rem 1.2rem;
+            border-radius: 6px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-secondary { background: #e2e8f0; color: var(--text); }
+        button:hover { opacity: 0.9; }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: #fff;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1 style="font-size: 1.5rem; margin: 0;">Notes</h1>
+        <button id="btn-new-note" class="btn-primary">+ Create Note</button>
+    </header>
+
+    <div class="container">
+        <!-- List View -->
+        <div id="list-view">
+            <div class="controls">
+                <div class="search-container">
+                    <input type="text" id="search-bar" class="search-input" placeholder="Filter by title or content...">
+                    <span id="clear-search" class="clear-search">&times;</span>
+                </div>
+                <select id="sort-order">
+                    <option value="desc">Newest First</option>
+                    <option value="asc">Oldest First</option>
+                </select>
+            </div>
+            <div id="notes-grid" class="notes-grid"></div>
+        </div>
+
+        <!-- Editor View -->
+        <div id="editor-view" class="editor-view hidden">
+            <div class="editor-header">
+                <h2 id="editor-title-label">New Note</h2>
+                <button id="btn-cancel" class="btn-secondary">Cancel</button>
+            </div>
+            <input type="text" id="note-title" class="full-width" placeholder="Title or Summary">
+            <textarea id="note-body" class="full-width" placeholder="Body content... (Paste images here)"></textarea>
+            
+            <div id="attachments-container" class="attachments"></div>
+            
+            <button id="btn-save" class="btn-primary">Save Note</button>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="image-modal" class="modal">
+        <span class="modal-close" id="close-modal">&times;</span>
+        <img class="modal-content" id="modal-img">
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

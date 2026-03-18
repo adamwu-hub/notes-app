@@ -1,0 +1,52 @@
+[
+  {
+    "id": "3c66c7db-b17b-482c-abee-6bb8b7d49937",
+    "title": "Test Note",
+    "body": "This is a test",
+    "attachments": [],
+    "createdAt": "2026-03-18T11:33:25.172Z",
+    "updatedAt": "2026-03-18T11:33:25.172Z"
+  },
+  {
+    "id": "d280c436-b2ac-466f-8160-2a3d53779637",
+    "title": "Note 2",
+    "body": "Body 2",
+    "attachments": [],
+    "createdAt": "2026-03-18T11:34:37.663Z",
+    "updatedAt": "2026-03-18T11:34:37.663Z"
+  },
+  {
+    "id": "05a91067-2e69-43c7-bb74-166f259d2fab",
+    "title": "dafdafd",
+    "body": "",
+    "attachments": [],
+    "createdAt": "2026-03-18T11:36:30.432Z",
+    "updatedAt": "2026-03-18T11:36:30.433Z"
+  },
+  {
+    "id": "7981bf03-f5d5-4874-b7d2-4312efc840fb",
+    "title": "test with body image",
+    "body": "dsaf das fdas fdas\ndsafda\nds fdas\nfddsa fda dfa\ndafdas fda",
+    "attachments": [],
+    "createdAt": "2026-03-18T11:37:00.795Z",
+    "updatedAt": "2026-03-18T11:37:00.795Z"
+  },
+  {
+    "id": "5b6672ed-76d6-47ba-9f2b-ba1dda7860a9",
+    "title": "dafda dafd",
+    "body": "dafd a\ndsafda\nfdasfdfdasf\ndafdafd\n",
+    "attachments": [
+      {
+        "id": "e3d00176-948c-4690-bf7c-4f9e33bb09d6",
+        "filename": "attachment-aaf3e9a4-bb84-4a2f-a4a0-97f2872979a3.png",
+        "originalName": "pasted-image.png",
+        "mimeType": "image/png",
+        "size": 189288,
+        "uploadDate": "2026-03-18T11:50:04.164Z",
+        "url": "/attachments/attachment-aaf3e9a4-bb84-4a2f-a4a0-97f2872979a3.png"
+      }
+    ],
+    "createdAt": "2026-03-18T11:50:07.884Z",
+    "updatedAt": "2026-03-18T11:50:07.884Z"
+  }
+]
