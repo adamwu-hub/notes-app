@@ -1,12 +1,13 @@
-const express = require('express');
-const session = require('express-session');
-const cors = require('cors');
-const morgan = require('morgan');
-const path = require('path');
-const notesRouter = require('./routes/notes');
-const authRouter = require('./routes/auth');
+import express, { Request, Response, NextFunction } from 'express';
+import session from 'express-session';
+import cors from 'cors';
+import morgan from 'morgan';
+import * as path from 'path';
+import notesRouter from './routes/notes';
+import authRouter from './routes/auth';
+import dotenv from 'dotenv';
 
-require('dotenv').config();
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -41,7 +42,7 @@ app.use('/attachments', express.static(path.join(__dirname, '../data/attachments
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Global error handler
-app.use((err, req, res, next) => {
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error('GLOBAL ERROR HANDLER:', err);
   res.status(err.status || 500).json({
     message: err.message || 'Internal Server Error',
@@ -53,4 +54,4 @@ app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
 
-module.exports = app;
+export default app;

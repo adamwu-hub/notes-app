@@ -1,14 +1,18 @@
-const { v4: uuidv4 } = require('uuid');
-const storage = require('../utils/storage');
-const path = require('path');
-const fs = require('fs').promises;
+import { Request, Response } from 'express';
+import { v4 as uuidv4 } from 'uuid';
+import * as storage from '../utils/storage';
+import * as path from 'path';
+import { promises as fs } from 'fs';
 
-exports.getAllNotes = async (req, res) => {
+const getCurrentUserId = (req: Request): string | undefined => req.session.userId;
+
+export const getAllNotes = async (req: Request, res: Response) => {
   try {
-    const currentUserId = req.session.userId;
+    const currentUserId = getCurrentUserId(req);
+    if (!currentUserId) return res.status(401).json({ message: 'Unauthorized' });
+
     const notes = await storage.readNotes();
     
-    // Filter: Notes owned by user OR shared with user
     const userNotes = notes.filter(n => 
       n.ownerId === currentUserId || 
       (n.sharedWith && n.sharedWith.includes(currentUserId))
@@ -21,9 +25,11 @@ exports.getAllNotes = async (req, res) => {
   }
 };
 
-exports.getNoteById = async (req, res) => {
+export const getNoteById = async (req: Request, res: Response) => {
   try {
-    const currentUserId = req.session.userId;
+    const currentUserId = getCurrentUserId(req);
+    if (!currentUserId) return res.status(401).json({ message: 'Unauthorized' });
+
     const notes = await storage.readNotes();
     const note = notes.find(n => n.id === req.params.id);
     
@@ -31,7 +37,6 @@ exports.getNoteById = async (req, res) => {
       return res.status(404).json({ message: 'Note not found' });
     }
 
-    // Check permission
     if (note.ownerId !== currentUserId && (!note.sharedWith || !note.sharedWith.includes(currentUserId))) {
       return res.status(403).json({ message: 'Access denied' });
     }
@@ -43,17 +48,20 @@ exports.getNoteById = async (req, res) => {
   }
 };
 
-exports.createNote = async (req, res) => {
+export const createNote = async (req: Request, res: Response) => {
   try {
+    const currentUserId = getCurrentUserId(req);
+    if (!currentUserId) return res.status(401).json({ message: 'Unauthorized' });
+
     const { title, body, attachments, sharedWith } = req.body;
     if (!title) {
       return res.status(400).json({ message: 'Title is required' });
     }
 
     const notes = await storage.readNotes();
-    const newNote = {
+    const newNote: storage.Note = {
       id: uuidv4(),
-      ownerId: req.session.userId,
+      ownerId: currentUserId,
       title,
       body: body || '',
       attachments: attachments || [], 
@@ -71,10 +79,12 @@ exports.createNote = async (req, res) => {
   }
 };
 
-exports.updateNote = async (req, res) => {
+export const updateNote = async (req: Request, res: Response) => {
   try {
+    const currentUserId = getCurrentUserId(req);
+    if (!currentUserId) return res.status(401).json({ message: 'Unauthorized' });
+
     const { title, body, attachments, sharedWith } = req.body;
-    const currentUserId = req.session.userId;
     const notes = await storage.readNotes();
     const index = notes.findIndex(n => n.id === req.params.id);
 
@@ -82,12 +92,11 @@ exports.updateNote = async (req, res) => {
       return res.status(404).json({ message: 'Note not found' });
     }
 
-    // Only owner can update the content and sharing
     if (notes[index].ownerId !== currentUserId) {
       return res.status(403).json({ message: 'Only the owner can update this note' });
     }
 
-    const updatedNote = {
+    const updatedNote: storage.Note = {
       ...notes[index],
       title: title || notes[index].title,
       body: body !== undefined ? body : notes[index].body,
@@ -105,9 +114,11 @@ exports.updateNote = async (req, res) => {
   }
 };
 
-exports.deleteNote = async (req, res) => {
+export const deleteNote = async (req: Request, res: Response) => {
   try {
-    const currentUserId = req.session.userId;
+    const currentUserId = getCurrentUserId(req);
+    if (!currentUserId) return res.status(401).json({ message: 'Unauthorized' });
+
     const notes = await storage.readNotes();
     const index = notes.findIndex(n => n.id === req.params.id);
 
@@ -115,12 +126,10 @@ exports.deleteNote = async (req, res) => {
       return res.status(404).json({ message: 'Note not found' });
     }
 
-    // Only owner can delete
     if (notes[index].ownerId !== currentUserId) {
       return res.status(403).json({ message: 'Only the owner can delete this note' });
     }
 
-    // Cleanup attachments
     const attachmentsDir = path.join(__dirname, '../../data/attachments');
     for (const attachment of (notes[index].attachments || [])) {
       try {
@@ -139,13 +148,13 @@ exports.deleteNote = async (req, res) => {
   }
 };
 
-exports.uploadAttachment = async (req, res) => {
+export const uploadAttachment = async (req: Request, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    const attachment = {
+    const attachment: storage.Attachment = {
       id: uuidv4(),
       filename: req.file.filename,
       originalName: req.file.originalname,
@@ -162,12 +171,12 @@ exports.uploadAttachment = async (req, res) => {
   }
 };
 
-// Helper to list users for sharing
-exports.getUsers = async (req, res) => {
+export const getUsers = async (req: Request, res: Response) => {
   try {
+    const currentUserId = getCurrentUserId(req);
+    if (!currentUserId) return res.status(401).json({ message: 'Unauthorized' });
+
     const users = await storage.readUsers();
-    const currentUserId = req.session.userId;
-    // Return list of other users (just username and id)
     const otherUsers = users
       .filter(u => u.id !== currentUserId)
       .map(u => ({ id: u.id, username: u.username }));

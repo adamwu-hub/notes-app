@@ -1,8 +1,16 @@
-const { v4: uuidv4 } = require('uuid');
-const bcrypt = require('bcryptjs');
-const storage = require('../utils/storage');
+import { Request, Response, NextFunction } from 'express';
+import { v4 as uuidv4 } from 'uuid';
+import bcrypt from 'bcryptjs';
+import * as storage from '../utils/storage';
 
-exports.register = async (req, res) => {
+declare module 'express-session' {
+  interface SessionData {
+    userId: string;
+    username: string;
+  }
+}
+
+export const register = async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
     console.log('Registering user:', username);
@@ -18,7 +26,7 @@ exports.register = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = {
+    const newUser: storage.User = {
       id: uuidv4(),
       username,
       password: hashedPassword
@@ -35,13 +43,13 @@ exports.register = async (req, res) => {
   }
 };
 
-exports.login = async (req, res) => {
+export const login = async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
     const users = await storage.readUsers();
     const user = users.find(u => u.username === username);
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ message: 'Invalid username or password' });
     }
 
@@ -56,20 +64,24 @@ exports.login = async (req, res) => {
   }
 };
 
-exports.logout = (req, res) => {
-  req.session.destroy();
-  res.json({ message: 'Logged out successfully' });
+export const logout = (req: Request, res: Response) => {
+  req.session.destroy((err) => {
+    if (err) {
+       console.error('Error destroying session:', err);
+       return res.status(500).json({ message: 'Could not log out' });
+    }
+    res.json({ message: 'Logged out successfully' });
+  });
 };
 
-exports.me = (req, res) => {
+export const me = (req: Request, res: Response) => {
   if (!req.session.userId) {
     return res.status(401).json({ message: 'Not authenticated' });
   }
   res.json({ id: req.session.userId, username: req.session.username });
 };
 
-// Middleware to protect routes
-exports.isAuthenticated = (req, res, next) => {
+export const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
   if (req.session.userId) {
     return next();
   }
