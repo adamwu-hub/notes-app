@@ -1,11 +1,12 @@
 const fs = require('fs').promises;
 const path = require('path');
 
-const DATA_FILE = path.join(__dirname, '../../data/notes.json');
+const NOTES_FILE = path.join(__dirname, '../../data/notes.json');
+const USERS_FILE = path.join(__dirname, '../../data/users.json');
 
-async function readNotes() {
+async function readFile(filePath) {
   try {
-    const data = await fs.readFile(DATA_FILE, 'utf8');
+    const data = await fs.readFile(filePath, 'utf8');
     return JSON.parse(data);
   } catch (error) {
     if (error.code === 'ENOENT') {
@@ -15,11 +16,13 @@ async function readNotes() {
   }
 }
 
-async function writeNotes(notes) {
-  await fs.writeFile(DATA_FILE, JSON.stringify(notes, null, 2), 'utf8');
+async function writeFile(filePath, data) {
+  await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
 }
 
 module.exports = {
-  readNotes,
-  writeNotes
+  readNotes: () => readFile(NOTES_FILE),
+  writeNotes: (notes) => writeFile(NOTES_FILE, notes),
+  readUsers: () => readFile(USERS_FILE),
+  writeUsers: (users) => writeFile(USERS_FILE, users)
 };

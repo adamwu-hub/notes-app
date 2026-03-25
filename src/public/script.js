@@ -2,245 +2,312 @@
 let allNotes = [];
 let currentNoteId = null;
 let currentAttachments = [];
+let currentUser = null;
+let selectedShareUsers = [];
+let isLoginMode = true;
 
 // DOM Elements
+const authSection = document.getElementById('auth-section');
+const mainApp = document.getElementById('main-app');
 const listView = document.getElementById('list-view');
 const editorView = document.getElementById('editor-view');
 const notesGrid = document.getElementById('notes-grid');
 const searchBar = document.getElementById('search-bar');
 const clearSearch = document.getElementById('clear-search');
 const sortOrder = document.getElementById('sort-order');
+const userDisplay = document.getElementById('user-display');
+const shareUserList = document.getElementById('share-user-list');
+
+// Inputs
+const usernameInput = document.getElementById('username');
+const passwordInput = document.getElementById('password');
 const noteTitleInput = document.getElementById('note-title');
 const noteBodyInput = document.getElementById('note-body');
 const attachmentsContainer = document.getElementById('attachments-container');
-const editorTitleLabel = document.getElementById('editor-title-label');
-
-// Modal Elements
-const imageModal = document.getElementById('image-modal');
-const modalImg = document.getElementById('modal-img');
-const closeModal = document.getElementById('close-modal');
 
 // Buttons
+const btnAuthAction = document.getElementById('btn-auth-action');
+const btnToggleAuth = document.getElementById('btn-toggle-auth');
+const btnLogout = document.getElementById('btn-logout');
 const btnNewNote = document.getElementById('btn-new-note');
-const btnCancel = document.getElementById('btn-cancel');
 const btnSave = document.getElementById('btn-save');
+const btnCancel = document.getElementById('btn-cancel');
 
-// --- URL Query Persistence ---
+// --- Auth Logic ---
+
+async function checkAuth() {
+    try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+            currentUser = await res.json();
+            showApp();
+        } else {
+            showAuth();
+        }
+    } catch (e) { showAuth(); }
+}
+
+function showAuth() {
+    authSection.classList.remove('hidden');
+    mainApp.classList.add('hidden');
+}
+
+function showApp() {
+    authSection.classList.add('hidden');
+    mainApp.classList.remove('hidden');
+    userDisplay.textContent = currentUser.username;
+    loadSettingsFromURL();
+    loadNotes();
+}
+
+btnToggleAuth.onclick = () => {
+    isLoginMode = !isLoginMode;
+    document.getElementById('auth-title').textContent = isLoginMode ? 'Login' : 'Register';
+    btnAuthAction.textContent = isLoginMode ? 'Login' : 'Register';
+    btnToggleAuth.textContent = isLoginMode ? 'Need an account? Register' : 'Have an account? Login';
+};
+
+btnAuthAction.onclick = async () => {
+    const username = usernameInput.value;
+    const password = passwordInput.value;
+    const endpoint = isLoginMode ? '/api/auth/login' : '/api/auth/register';
+
+    const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+    });
+
+    if (res.ok) {
+        if (isLoginMode) {
+            currentUser = await res.json();
+            showApp();
+        } else {
+            alert('Registered! Now please login.');
+            isLoginMode = true;
+            btnToggleAuth.click();
+        }
+    } else {
+        const data = await res.json();
+        alert(data.message || 'Auth failed');
+    }
+};
+
+btnLogout.onclick = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    currentUser = null;
+    showAuth();
+};
+
+// --- URL & Navigation ---
 
 function loadSettingsFromURL() {
     const params = new URLSearchParams(window.location.search);
-    const sort = params.get('sort');
-    const filter = params.get('filter');
-
-    if (sort) sortOrder.value = sort;
-    if (filter) searchBar.value = filter;
+    if (params.get('sort')) sortOrder.value = params.get('sort');
+    if (params.get('filter')) searchBar.value = params.get('filter');
 }
 
 function updateURL() {
     const params = new URLSearchParams();
     if (sortOrder.value !== 'desc') params.set('sort', sortOrder.value);
     if (searchBar.value) params.set('filter', searchBar.value);
-
     const newURL = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
     window.history.replaceState({}, '', newURL);
 }
-
-// --- View Navigation ---
 
 function showListView() {
     listView.classList.remove('hidden');
     editorView.classList.add('hidden');
     currentNoteId = null;
     currentAttachments = [];
+    selectedShareUsers = [];
     noteTitleInput.value = '';
     noteBodyInput.value = '';
     attachmentsContainer.innerHTML = '';
     loadNotes();
 }
 
-function showEditorView(note = null) {
+async function showEditorView(note = null) {
     listView.classList.add('hidden');
     editorView.classList.remove('hidden');
     
+    // Load users for sharing
+    const usersRes = await fetch('/api/notes/users/list');
+    const allUsers = await usersRes.json();
+    
     if (note) {
-        editorTitleLabel.textContent = 'Edit Note';
+        document.getElementById('editor-title-label').textContent = 'Edit Note';
         currentNoteId = note.id;
         noteTitleInput.value = note.title;
         noteBodyInput.value = note.body;
         currentAttachments = note.attachments || [];
+        selectedShareUsers = note.sharedWith || [];
         attachmentsContainer.innerHTML = '';
         currentAttachments.forEach(displayAttachment);
     } else {
-        editorTitleLabel.textContent = 'New Note';
+        document.getElementById('editor-title-label').textContent = 'New Note';
         currentNoteId = null;
+        currentAttachments = [];
+        selectedShareUsers = [];
     }
+
+    renderUserList(allUsers);
 }
 
-// --- Data Fetching ---
+function renderUserList(users) {
+    shareUserList.innerHTML = '';
+    users.forEach(user => {
+        const tag = document.createElement('div');
+        tag.className = `user-tag ${selectedShareUsers.includes(user.id) ? 'selected' : ''}`;
+        tag.textContent = user.username;
+        tag.onclick = () => {
+            if (selectedShareUsers.includes(user.id)) {
+                selectedShareUsers = selectedShareUsers.filter(id => id !== user.id);
+            } else {
+                selectedShareUsers.push(user.id);
+            }
+            tag.classList.toggle('selected');
+        };
+        shareUserList.appendChild(tag);
+    });
+}
+
+// --- Note Logic ---
 
 async function loadNotes() {
     try {
-        const response = await fetch('/api/notes');
-        allNotes = await response.json();
+        const res = await fetch('/api/notes');
+        if (res.status === 401) return showAuth();
+        allNotes = await res.json();
         renderNotes();
-    } catch (error) {
-        console.error('Failed to load notes:', error);
-    }
+    } catch (e) { console.error(e); }
 }
 
 function renderNotes() {
-    const searchTerm = searchBar.value.toLowerCase();
+    const term = searchBar.value.toLowerCase();
     const order = sortOrder.value;
-    
-    // Toggle clear button visibility
-    clearSearch.style.display = searchTerm ? 'block' : 'none';
-    
+    clearSearch.style.display = term ? 'block' : 'none';
     updateURL();
 
     let filtered = allNotes.filter(n => 
-        (n.title || '').toLowerCase().includes(searchTerm) || 
-        (n.body || '').toLowerCase().includes(searchTerm)
+        (n.title || '').toLowerCase().includes(term) || 
+        (n.body || '').toLowerCase().includes(term)
     );
 
     filtered.sort((a, b) => {
-        const dateA = new Date(a.createdAt);
-        const dateB = new Date(b.createdAt);
-        return order === 'desc' ? dateB - dateA : dateA - dateB;
+        const dA = new Date(a.createdAt);
+        const dB = new Date(b.createdAt);
+        return order === 'desc' ? dB - dA : dA - dB;
     });
 
     notesGrid.innerHTML = '';
     filtered.forEach(note => {
+        const isOwner = note.ownerId === currentUser.id;
         const card = document.createElement('div');
         card.className = 'note-card';
         card.innerHTML = `
+            ${!isOwner ? '<div class="badge shared">Shared with me</div>' : '<div class="badge">My Note</div>'}
             <div class="note-actions">
-                <button class="icon-btn edit-btn" title="Edit">✎</button>
-                <button class="icon-btn delete-btn delete" title="Delete">🗑</button>
+                ${isOwner ? '<button class="icon-btn edit-btn">✎</button><button class="icon-btn del-btn">🗑</button>' : '<button class="icon-btn view-btn">👁</button>'}
             </div>
             <h3>${note.title}</h3>
-            <p>${note.body.length > 100 ? note.body.substring(0, 100) + '...' : note.body}</p>
+            <p>${note.body.substring(0, 100)}${note.body.length > 100 ? '...' : ''}</p>
             <div class="attachments">
-                ${(note.attachments || []).map(att => `<img src="${att.url}" class="thumb-img" style="width:40px;height:40px;object-fit:cover;border-radius:4px;cursor:pointer;">`).join('')}
+                ${(note.attachments || []).map(a => `<img src="${a.url}" class="thumb">`).join('')}
             </div>
-            <small style="margin-top:auto; color:#94a3b8;">${new Date(note.createdAt).toLocaleDateString()}</small>
         `;
-
-        card.querySelectorAll('.thumb-img').forEach((img, idx) => {
-            img.onclick = () => openImageModal(note.attachments[idx].url);
-        });
-
-        card.querySelector('.edit-btn').onclick = () => showEditorView(note);
-        card.querySelector('.delete-btn').onclick = () => deleteNote(note.id);
         
+        const thumbs = card.querySelectorAll('.thumb');
+        thumbs.forEach((t, i) => t.onclick = () => openModal(note.attachments[i].url));
+
+        if (isOwner) {
+            card.querySelector('.edit-btn').onclick = () => showEditorView(note);
+            card.querySelector('.del-btn').onclick = () => deleteNote(note.id);
+        } else {
+            card.querySelector('.view-btn').onclick = () => {
+                showEditorView(note);
+                // Disable editing for shared notes (simple version)
+                btnSave.classList.add('hidden');
+            };
+        }
         notesGrid.appendChild(card);
     });
 }
 
 async function deleteNote(id) {
-    if (!confirm('Are you sure you want to delete this note?')) return;
-    try {
+    if (confirm('Delete?')) {
         await fetch(`/api/notes/${id}`, { method: 'DELETE' });
         loadNotes();
-    } catch (error) {
-        console.error('Delete failed:', error);
     }
 }
-
-// --- Modal Logic ---
-
-function openImageModal(url) {
-    modalImg.src = url;
-    imageModal.style.display = 'flex';
-}
-
-closeModal.onclick = () => {
-    imageModal.style.display = 'none';
-};
-
-window.onclick = (event) => {
-    if (event.target === imageModal) {
-        imageModal.style.display = 'none';
-    }
-};
-
-// --- Save & Upload ---
-
-async function uploadAttachment(blob) {
-    const formData = new FormData();
-    formData.append('image', blob, 'pasted-image.png');
-
-    try {
-        const response = await fetch('/api/notes/attachments', {
-            method: 'POST',
-            body: formData
-        });
-        if (response.ok) {
-            const attachment = await response.json();
-            currentAttachments.push(attachment);
-            displayAttachment(attachment);
-        }
-    } catch (error) {
-        console.error('Upload failed:', error);
-    }
-}
-
-function displayAttachment(attachment) {
-    const img = document.createElement('img');
-    img.src = attachment.url;
-    img.className = 'attachment-item';
-    img.style.cursor = 'pointer';
-    img.onclick = () => openImageModal(attachment.url);
-    attachmentsContainer.appendChild(img);
-}
-
-// --- Event Listeners ---
-
-btnNewNote.onclick = () => showEditorView();
-btnCancel.onclick = () => showListView();
-
-searchBar.oninput = renderNotes;
-sortOrder.onchange = renderNotes;
-
-clearSearch.onclick = () => {
-    searchBar.value = '';
-    searchBar.focus();
-    renderNotes();
-};
-
-noteBodyInput.addEventListener('paste', async (e) => {
-    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-    for (const item of items) {
-        if (item.type.indexOf('image') !== -1) {
-            const blob = item.getAsFile();
-            await uploadAttachment(blob);
-        }
-    }
-});
 
 btnSave.onclick = async () => {
     const title = noteTitleInput.value;
     const body = noteBodyInput.value;
+    if (!title) return alert('Title req');
 
-    if (!title) return alert('Title is required');
-
-    const noteData = { title, body, attachments: currentAttachments };
+    const data = { title, body, attachments: currentAttachments, sharedWith: selectedShareUsers };
     const method = currentNoteId ? 'PUT' : 'POST';
     const url = currentNoteId ? `/api/notes/${currentNoteId}` : '/api/notes';
 
-    try {
-        const response = await fetch(url, {
-            method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(noteData)
-        });
+    const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
 
-        if (response.ok) showListView();
-        else alert('Save failed');
-    } catch (error) {
-        console.error('Save failed:', error);
+    if (res.ok) showListView();
+    else alert('Save failed');
+};
+
+// --- Attachments & Modal ---
+
+async function uploadAttachment(blob) {
+    const formData = new FormData();
+    formData.append('image', blob, 'pasted.png');
+    const res = await fetch('/api/notes/attachments', { method: 'POST', body: formData });
+    if (res.ok) {
+        const att = await res.json();
+        currentAttachments.push(att);
+        displayAttachment(att);
+    }
+}
+
+function displayAttachment(att) {
+    const img = document.createElement('img');
+    img.src = att.url;
+    img.className = 'attachment-item';
+    img.onclick = () => openModal(att.url);
+    attachmentsContainer.appendChild(img);
+}
+
+function openModal(url) {
+    document.getElementById('modal-img').src = url;
+    document.getElementById('image-modal').style.display = 'flex';
+}
+
+document.getElementById('image-modal').onclick = () => {
+    document.getElementById('image-modal').style.display = 'none';
+};
+
+// --- Init ---
+
+btnNewNote.onclick = () => {
+    btnSave.classList.remove('hidden');
+    showEditorView();
+};
+btnCancel.onclick = showListView;
+searchBar.oninput = renderNotes;
+sortOrder.onchange = renderNotes;
+clearSearch.onclick = () => { searchBar.value = ''; renderNotes(); };
+
+noteBodyInput.onpaste = async (e) => {
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    for (const item of items) {
+        if (item.type.indexOf('image') !== -1) {
+            await uploadAttachment(item.getAsFile());
+        }
     }
 };
 
-// Initial Load
-loadSettingsFromURL();
-loadNotes();
+checkAuth();

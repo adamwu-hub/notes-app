@@ -1,18 +1,24 @@
 # Project Mandates: Notes App
 
 This file contains foundational instructions for Gemini CLI when working on this project. These mandates take precedence over general defaults.
-
 ## 1. Architectural Principles
 - **Backend**: Always use Node.js and Express.
-- **Storage**: Use local JSON file storage (`data/notes.json`) for data persistence. Do not migrate to a database unless explicitly directed.
+- **Storage**: Use local JSON file storage (`data/notes.json` and `data/users.json`).
+- **Authentication**: Use `express-session` for session management and `bcryptjs` for password hashing.
+- **Authorization**: Implement ownership logic. Users only see their own notes or notes where their ID is in the `sharedWith` array.
+- **Modality**: Only owners can update or delete their notes. Shared users have read-only access.
 - **File Handling**: Store image attachments in `data/attachments/` using Multer.
-- **Frontend**: Use Vanilla HTML, Vanilla CSS, and Vanilla JavaScript. Avoid adding heavy frameworks (React, Vue, Angular) or utility-first CSS (Tailwind) unless requested.
+- **Frontend**: Use Vanilla HTML, Vanilla CSS, and Vanilla JavaScript.
 
 ## 2. State & Persistence Mandates
-- **URL Query over LocalStorage**: Always prefer **URL Query Parameters** (`?sort=...&filter=...`) for persisting UI state like sorting, filtering, or view modes. 
-- **DO NOT** use `localStorage` or `sessionStorage` for UI state persistence without a specific architectural reason.
-
+- **Sessions**: Use sessions to track the current user. Protect API routes with authentication middleware.
+- **URL Query over LocalStorage**: Always prefer **URL Query Parameters** for UI state like sorting or filtering.
+...
 ## 3. UI/UX Standards
+- **Auth Flow**: Provide a unified Login/Register view. Redirect to auth if not logged in.
+- **Sharing UI**: Allow users to select other registered users to share a note with via a multi-select interface in the editor.
+- **Badging**: Clearly label notes as "My Note" or "Shared with me" in the list view.
+...
 - **Image Handling**: 
   - Support direct `paste` events in text areas for image uploads.
   - Display images as clickable thumbnails that open in a full-screen modal/popup.

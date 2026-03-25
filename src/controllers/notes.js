@@ -5,32 +5,47 @@ const fs = require('fs').promises;
 
 exports.getAllNotes = async (req, res) => {
   try {
+    const currentUserId = req.session.userId;
     const notes = await storage.readNotes();
-    res.json(notes);
+    
+    // Filter: Notes owned by user OR shared with user
+    const userNotes = notes.filter(n => 
+      n.ownerId === currentUserId || 
+      (n.sharedWith && n.sharedWith.includes(currentUserId))
+    );
+    
+    res.json(userNotes);
   } catch (error) {
     console.error('Error in getAllNotes:', error);
-    res.status(500).json({ message: 'Error reading notes', error: error.message });
+    res.status(500).json({ message: 'Error reading notes' });
   }
 };
 
 exports.getNoteById = async (req, res) => {
   try {
+    const currentUserId = req.session.userId;
     const notes = await storage.readNotes();
     const note = notes.find(n => n.id === req.params.id);
+    
     if (!note) {
       return res.status(404).json({ message: 'Note not found' });
     }
+
+    // Check permission
+    if (note.ownerId !== currentUserId && (!note.sharedWith || !note.sharedWith.includes(currentUserId))) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
     res.json(note);
   } catch (error) {
     console.error('Error in getNoteById:', error);
-    res.status(500).json({ message: 'Error reading note', error: error.message });
+    res.status(500).json({ message: 'Error reading note' });
   }
 };
 
 exports.createNote = async (req, res) => {
   try {
-    const { title, body, attachments } = req.body;
-    console.log('Creating note with data:', { title, body, attachments });
+    const { title, body, attachments, sharedWith } = req.body;
     if (!title) {
       return res.status(400).json({ message: 'Title is required' });
     }
@@ -38,26 +53,28 @@ exports.createNote = async (req, res) => {
     const notes = await storage.readNotes();
     const newNote = {
       id: uuidv4(),
+      ownerId: req.session.userId,
       title,
       body: body || '',
       attachments: attachments || [], 
+      sharedWith: sharedWith || [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
 
     notes.push(newNote);
     await storage.writeNotes(notes);
-    console.log('Note created successfully:', newNote.id);
     res.status(201).json(newNote);
   } catch (error) {
     console.error('Error in createNote:', error);
-    res.status(500).json({ message: 'Error creating note', error: error.message });
+    res.status(500).json({ message: 'Error creating note' });
   }
 };
 
 exports.updateNote = async (req, res) => {
   try {
-    const { title, body, attachments } = req.body;
+    const { title, body, attachments, sharedWith } = req.body;
+    const currentUserId = req.session.userId;
     const notes = await storage.readNotes();
     const index = notes.findIndex(n => n.id === req.params.id);
 
@@ -65,11 +82,17 @@ exports.updateNote = async (req, res) => {
       return res.status(404).json({ message: 'Note not found' });
     }
 
+    // Only owner can update the content and sharing
+    if (notes[index].ownerId !== currentUserId) {
+      return res.status(403).json({ message: 'Only the owner can update this note' });
+    }
+
     const updatedNote = {
       ...notes[index],
       title: title || notes[index].title,
       body: body !== undefined ? body : notes[index].body,
       attachments: attachments || notes[index].attachments,
+      sharedWith: sharedWith !== undefined ? sharedWith : notes[index].sharedWith,
       updatedAt: new Date().toISOString()
     };
 
@@ -78,12 +101,13 @@ exports.updateNote = async (req, res) => {
     res.json(updatedNote);
   } catch (error) {
     console.error('Error in updateNote:', error);
-    res.status(500).json({ message: 'Error updating note', error: error.message });
+    res.status(500).json({ message: 'Error updating note' });
   }
 };
 
 exports.deleteNote = async (req, res) => {
   try {
+    const currentUserId = req.session.userId;
     const notes = await storage.readNotes();
     const index = notes.findIndex(n => n.id === req.params.id);
 
@@ -91,13 +115,18 @@ exports.deleteNote = async (req, res) => {
       return res.status(404).json({ message: 'Note not found' });
     }
 
-    // Cleanup attachments (optional, but good for cleanup)
+    // Only owner can delete
+    if (notes[index].ownerId !== currentUserId) {
+      return res.status(403).json({ message: 'Only the owner can delete this note' });
+    }
+
+    // Cleanup attachments
     const attachmentsDir = path.join(__dirname, '../../data/attachments');
     for (const attachment of (notes[index].attachments || [])) {
       try {
         await fs.unlink(path.join(attachmentsDir, attachment.filename));
       } catch (err) {
-        console.error(`Failed to delete attachment file: ${attachment.filename}`, err);
+        console.error(`Failed to delete attachment: ${attachment.filename}`, err);
       }
     }
 
@@ -106,13 +135,12 @@ exports.deleteNote = async (req, res) => {
     res.json({ message: 'Note deleted' });
   } catch (error) {
     console.error('Error in deleteNote:', error);
-    res.status(500).json({ message: 'Error deleting note', error: error.message });
+    res.status(500).json({ message: 'Error deleting note' });
   }
 };
 
 exports.uploadAttachment = async (req, res) => {
   try {
-    console.log('Uploading attachment:', req.file?.originalname);
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
     }
@@ -127,10 +155,24 @@ exports.uploadAttachment = async (req, res) => {
       url: `/attachments/${req.file.filename}`
     };
 
-    console.log('Attachment uploaded successfully:', attachment.id);
     res.status(201).json(attachment);
   } catch (error) {
     console.error('Error in uploadAttachment:', error);
-    res.status(500).json({ message: 'Error uploading attachment', error: error.message });
+    res.status(500).json({ message: 'Error uploading attachment' });
+  }
+};
+
+// Helper to list users for sharing
+exports.getUsers = async (req, res) => {
+  try {
+    const users = await storage.readUsers();
+    const currentUserId = req.session.userId;
+    // Return list of other users (just username and id)
+    const otherUsers = users
+      .filter(u => u.id !== currentUserId)
+      .map(u => ({ id: u.id, username: u.username }));
+    res.json(otherUsers);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching users' });
   }
 };
