@@ -8,5 +8,15 @@
     "id": "19c7fa86-662e-4069-aff8-7a330b7b608f",
     "username": "user2",
     "password": "$2b$10$97Cee7u5B5NMqEX526mGC.7BwwVQt61GfbMMyAgjdN6ypoUbicFc."
+  },
+  {
+    "id": "5abfe729-6344-4537-950d-5315ee24513b",
+    "username": "user3",
+    "password": "$2b$10$3JYL8HfUdh7HHFRgb6Fa8OsVB2DPdhV192J.OcZxf0t38GyparQES"
+  },
+  {
+    "id": "416806da-f5c8-49c2-bf1a-730530547155",
+    "username": "user4",
+    "password": "$2b$10$6mUAEGDe6sW0di6ZK8UKg.snZ.xZCSmaX2fIJW6goRi2Rt7BMrdOK"
   }
 ]

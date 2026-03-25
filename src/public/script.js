@@ -16,7 +16,9 @@ const searchBar = document.getElementById('search-bar');
 const clearSearch = document.getElementById('clear-search');
 const sortOrder = document.getElementById('sort-order');
 const userDisplay = document.getElementById('user-display');
-const shareUserList = document.getElementById('share-user-list');
+const userSearchInput = document.getElementById('user-search');
+const userSearchResults = document.getElementById('user-search-results');
+const selectedUsersList = document.getElementById('selected-users-list');
 
 // Inputs
 const usernameInput = document.getElementById('username');
@@ -130,6 +132,9 @@ function showListView() {
 async function showEditorView(note = null) {
     listView.classList.add('hidden');
     editorView.classList.remove('hidden');
+    userSearchInput.value = '';
+    userSearchResults.innerHTML = '';
+    userSearchResults.classList.add('hidden');
     
     // Load users for sharing
     const usersRes = await fetch('/api/notes/users/list');
@@ -151,24 +156,68 @@ async function showEditorView(note = null) {
         selectedShareUsers = [];
     }
 
-    renderUserList(allUsers);
+    setupUserSearch(allUsers);
+    renderSelectedUsers(allUsers);
 }
 
-function renderUserList(users) {
-    shareUserList.innerHTML = '';
-    users.forEach(user => {
-        const tag = document.createElement('div');
-        tag.className = `user-tag ${selectedShareUsers.includes(user.id) ? 'selected' : ''}`;
-        tag.textContent = user.username;
-        tag.onclick = () => {
-            if (selectedShareUsers.includes(user.id)) {
-                selectedShareUsers = selectedShareUsers.filter(id => id !== user.id);
-            } else {
-                selectedShareUsers.push(user.id);
-            }
-            tag.classList.toggle('selected');
-        };
-        shareUserList.appendChild(tag);
+function setupUserSearch(allUsers) {
+    userSearchInput.oninput = () => {
+        const query = userSearchInput.value.toLowerCase();
+        if (!query) {
+            userSearchResults.classList.add('hidden');
+            return;
+        }
+
+        const matches = allUsers.filter(u => 
+            u.username.toLowerCase().includes(query) && 
+            !selectedShareUsers.includes(u.id)
+        );
+
+        if (matches.length > 0) {
+            userSearchResults.innerHTML = matches.map(u => `
+                <div class="search-result-item" data-id="${u.id}">${u.username}</div>
+            `).join('');
+            userSearchResults.classList.remove('hidden');
+
+            userSearchResults.querySelectorAll('.search-result-item').forEach(item => {
+                item.onclick = () => {
+                    const id = item.getAttribute('data-id');
+                    selectedShareUsers.push(id);
+                    userSearchInput.value = '';
+                    userSearchResults.classList.add('hidden');
+                    renderSelectedUsers(allUsers);
+                };
+            });
+        } else {
+            userSearchResults.classList.add('hidden');
+        }
+    };
+
+    // Close results when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!userSearchInput.contains(e.target) && !userSearchResults.contains(e.target)) {
+            userSearchResults.classList.add('hidden');
+        }
+    });
+}
+
+function renderSelectedUsers(allUsers) {
+    selectedUsersList.innerHTML = '';
+    selectedShareUsers.forEach(id => {
+        const user = allUsers.find(u => u.id === id);
+        if (user) {
+            const tag = document.createElement('div');
+            tag.className = 'user-tag';
+            tag.innerHTML = `
+                ${user.username}
+                <span class="remove-user">&times;</span>
+            `;
+            tag.querySelector('.remove-user').onclick = () => {
+                selectedShareUsers = selectedShareUsers.filter(sid => sid !== id);
+                renderSelectedUsers(allUsers);
+            };
+            selectedUsersList.appendChild(tag);
+        }
     });
 }
 
