@@ -12,11 +12,20 @@ export const getAllNotes = async (req: Request, res: Response) => {
     if (!currentUserId) return res.status(401).json({ message: 'Unauthorized' });
 
     const notes = await storage.readNotes();
+    const users = await storage.readUsers();
     
-    const userNotes = notes.filter(n => 
-      n.ownerId === currentUserId || 
-      (n.sharedWith && n.sharedWith.includes(currentUserId))
-    );
+    const userNotes = notes
+      .filter(n => 
+        n.ownerId === currentUserId || 
+        (n.sharedWith && n.sharedWith.includes(currentUserId))
+      )
+      .map(n => {
+        const owner = users.find(u => u.id === n.ownerId);
+        return {
+          ...n,
+          ownerUsername: owner ? owner.username : 'Unknown'
+        };
+      });
     
     res.json(userNotes);
   } catch (error) {
@@ -37,11 +46,18 @@ export const getNoteById = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Note not found' });
     }
 
+    // Check permission
     if (note.ownerId !== currentUserId && (!note.sharedWith || !note.sharedWith.includes(currentUserId))) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    res.json(note);
+    const users = await storage.readUsers();
+    const owner = users.find(u => u.id === note.ownerId);
+
+    res.json({
+      ...note,
+      ownerUsername: owner ? owner.username : 'Unknown'
+    });
   } catch (error) {
     console.error('Error in getNoteById:', error);
     res.status(500).json({ message: 'Error reading note' });

@@ -255,7 +255,7 @@ function renderNotes() {
         const card = document.createElement('div');
         card.className = 'note-card';
         card.innerHTML = `
-            ${!isOwner ? '<div class="badge shared">Shared with me</div>' : '<div class="badge">My Note</div>'}
+            ${!isOwner ? `<div class="badge shared" title="Shared by ${note.ownerUsername}">Shared with me</div>` : '<div class="badge">My Note</div>'}
             <div class="note-actions">
                 ${isOwner ? '<button class="icon-btn edit-btn">✎</button><button class="icon-btn del-btn">🗑</button>' : '<button class="icon-btn view-btn">👁</button>'}
             </div>
