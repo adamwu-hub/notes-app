@@ -18,5 +18,10 @@
     "id": "416806da-f5c8-49c2-bf1a-730530547155",
     "username": "user4",
     "password": "$2b$10$6mUAEGDe6sW0di6ZK8UKg.snZ.xZCSmaX2fIJW6goRi2Rt7BMrdOK"
+  },
+  {
+    "id": "5fa99054-5764-47d7-9e17-8fc091301482",
+    "username": "user5",
+    "password": "$2b$10$PcZC9GnZuRfM6uS/secn5.K3OA0iwSkiXuKQnkUU55Ep0IEMTroy."
   }
 ]

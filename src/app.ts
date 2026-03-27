@@ -3,14 +3,18 @@ import session from 'express-session';
 import cors from 'cors';
 import morgan from 'morgan';
 import * as path from 'path';
-import notesRouter from './routes/notes';
-import authRouter from './routes/auth';
+import { fileURLToPath } from 'url';
+import notesRouter from './routes/notes.js';
+import authRouter from './routes/auth.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors({
@@ -37,9 +41,6 @@ app.use('/api/notes', notesRouter);
 
 // Serve uploaded attachments
 app.use('/attachments', express.static(path.join(__dirname, '../data/attachments')));
-
-// Serve frontend
-app.use(express.static(path.join(__dirname, 'public')));
 
 // Global error handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {

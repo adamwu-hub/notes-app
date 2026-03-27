@@ -1,32 +1,30 @@
 import multer from 'multer';
-import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { Request } from 'express';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const storage = multer.diskStorage({
-  destination: (req: Request, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
+  destination: (req, file, cb) => {
     cb(null, path.join(__dirname, '../../data/attachments'));
   },
-  filename: (req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
-    const uniqueSuffix = uuidv4();
-    const ext = path.extname(file.originalname);
-    cb(null, `attachment-${uniqueSuffix}${ext}`);
+  filename: (req, file, cb) => {
+    const uniqueName = `attachment-${uuidv4()}${path.extname(file.originalname)}`;
+    cb(null, uniqueName);
   }
 });
 
-const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  if (file.mimetype.startsWith('image/')) {
-    cb(null, true);
-  } else {
-    cb(new Error('Only images are allowed!'));
-  }
-};
-
-const upload = multer({ 
+const upload = multer({
   storage: storage,
-  fileFilter: fileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only images are allowed'));
+    }
   }
 });
 

@@ -53,13 +53,13 @@
     "id": "926ecb0e-f287-4e82-bbe5-a1b262aa41d6",
     "ownerId": "19c7fa86-662e-4069-aff8-7a330b7b608f",
     "title": "da",
-    "body": "dafdafdafd dafdafdaf",
+    "body": "dafdafdafd dafdafdaf<div>safdsafdsaf</div><div>dasfdsafdsafd</div><div>dafdsafdsafdsafdsaf</div>",
     "attachments": [],
     "sharedWith": [
       "d62cdbf9-1852-45be-81a3-0897dc078253"
     ],
     "createdAt": "2026-03-18T13:57:24.289Z",
-    "updatedAt": "2026-03-18T13:57:30.100Z"
+    "updatedAt": "2026-03-27T23:14:16.584Z"
   },
   {
     "id": "10036678-7b6d-40c9-a133-3a7f798997f5",
@@ -105,5 +105,17 @@
     "sharedWith": [],
     "createdAt": "2026-03-27T03:12:59.585Z",
     "updatedAt": "2026-03-27T03:12:59.585Z"
+  },
+  {
+    "id": "77592604-aa02-4e06-93df-48f14e8d9b7c",
+    "ownerId": "19c7fa86-662e-4069-aff8-7a330b7b608f",
+    "title": "first note after next.js",
+    "body": "<b>djksal jfkdasdfd</b><div>dsafdsa das fda fd</div><div>das fda fda<i>d dsafda da</i>&nbsp;dafdafda da</div>",
+    "attachments": [],
+    "sharedWith": [
+      "416806da-f5c8-49c2-bf1a-730530547155"
+    ],
+    "createdAt": "2026-03-27T23:15:40.341Z",
+    "updatedAt": "2026-03-27T23:15:40.341Z"
   }
 ]

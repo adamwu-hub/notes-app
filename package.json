@@ -3,15 +3,18 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "start": "ts-node src/app.ts",
-    "build": "tsc",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "tsx src/app.ts",
+    "dev:client": "next dev",
+    "build": "next build && tsc -p tsconfig.server.json",
+    "start": "node dist/app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
@@ -20,6 +23,9 @@
     "express-session": "^1.19.0",
     "morgan": "^1.10.1",
     "multer": "^2.1.1",
+    "next": "^16.2.1",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
@@ -30,8 +36,12 @@
     "@types/morgan": "^1.9.10",
     "@types/multer": "^2.1.0",
     "@types/node": "^25.5.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "@types/uuid": "^10.0.0",
+    "concurrently": "^9.2.1",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^6.0.2"
   }
 }

@@ -2,13 +2,13 @@
 
 This file contains foundational instructions for Gemini CLI when working on this project. These mandates take precedence over general defaults.
 ## 1. Architectural Principles
-- **Backend**: Always use Node.js and Express.
+- **Backend**: Always use Node.js and Express (running on port 3001).
+- **Frontend**: Always use Next.js (running on port 3000, proxying API and attachments to backend).
 - **Storage**: Use local JSON file storage (`data/notes.json` and `data/users.json`).
 - **Authentication**: Use `express-session` for session management and `bcryptjs` for password hashing.
 - **Authorization**: Implement ownership logic. Users only see their own notes or notes where their ID is in the `sharedWith` array.
 - **Modality**: Only owners can update or delete their notes. Shared users have read-only access.
 - **File Handling**: Store image attachments in `data/attachments/` using Multer.
-- **Frontend**: Use Vanilla HTML, Vanilla CSS, and Vanilla JavaScript.
 
 ## 2. State & Persistence Mandates
 - **Sessions**: Use sessions to track the current user. Protect API routes with authentication middleware.
