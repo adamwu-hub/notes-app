@@ -69,7 +69,53 @@
         /* Editor */
         .editor-view { background: var(--card); padding: 2rem; border-radius: 12px; }
         .full-width { width: 100%; box-sizing: border-box; margin-bottom: 1rem; }
-        textarea { height: 250px; resize: vertical; }
+        
+        .toolbar {
+            display: flex;
+            gap: 0.25rem;
+            padding: 0.5rem;
+            background: #f1f5f9;
+            border: 1px solid var(--border);
+            border-bottom: none;
+            border-top-left-radius: 6px;
+            border-top-right-radius: 6px;
+            flex-wrap: wrap;
+        }
+        .toolbar button {
+            padding: 4px 8px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: normal;
+            width: auto;
+            margin-bottom: 0;
+        }
+        .toolbar button:hover {
+            background: #e2e8f0;
+        }
+        .toolbar button.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        #note-body {
+            min-height: 250px;
+            height: auto;
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-bottom-left-radius: 6px;
+            border-bottom-right-radius: 6px;
+            overflow-y: auto;
+            background: white;
+            margin-bottom: 1rem;
+        }
+        #note-body:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
         
         /* Sharing */
         .share-section { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
@@ -163,7 +209,17 @@
                     <button id="btn-cancel" class="btn-secondary">Cancel</button>
                 </div>
                 <input type="text" id="note-title" class="full-width" placeholder="Title">
-                <textarea id="note-body" class="full-width" placeholder="Write something... Paste images to attach."></textarea>
+                
+                <div class="toolbar" id="editor-toolbar">
+                    <button type="button" data-command="bold" title="Bold"><b>B</b></button>
+                    <button type="button" data-command="italic" title="Italic"><i>I</i></button>
+                    <button type="button" data-command="underline" title="Underline"><u>U</u></button>
+                    <button type="button" data-command="strikeThrough" title="Strikethrough"><s>S</s></button>
+                    <button type="button" data-command="insertUnorderedList" title="Unordered List">• List</button>
+                    <button type="button" data-command="insertOrderedList" title="Ordered List">1. List</button>
+                    <button type="button" data-command="removeFormat" title="Clear Formatting">Tx</button>
+                </div>
+                <div id="note-body" contenteditable="true" class="full-width"></div>
                 
                 <div id="attachments-container" class="attachments"></div>
 

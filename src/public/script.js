@@ -124,7 +124,7 @@ function showListView() {
     currentAttachments = [];
     selectedShareUsers = [];
     noteTitleInput.value = '';
-    noteBodyInput.value = '';
+    noteBodyInput.innerHTML = '';
     attachmentsContainer.innerHTML = '';
     loadNotes();
 }
@@ -144,7 +144,7 @@ async function showEditorView(note = null) {
         document.getElementById('editor-title-label').textContent = 'Edit Note';
         currentNoteId = note.id;
         noteTitleInput.value = note.title;
-        noteBodyInput.value = note.body;
+        noteBodyInput.innerHTML = note.body;
         currentAttachments = note.attachments || [];
         selectedShareUsers = note.sharedWith || [];
         attachmentsContainer.innerHTML = '';
@@ -154,7 +154,13 @@ async function showEditorView(note = null) {
         currentNoteId = null;
         currentAttachments = [];
         selectedShareUsers = [];
+        noteBodyInput.innerHTML = '';
     }
+
+    const isOwner = !note || note.ownerId === currentUser.id;
+    noteTitleInput.readOnly = !isOwner;
+    noteBodyInput.contentEditable = isOwner;
+    document.getElementById('editor-toolbar').style.display = isOwner ? 'flex' : 'none';
 
     setupUserSearch(allUsers);
     renderSelectedUsers(allUsers);
@@ -232,6 +238,12 @@ async function loadNotes() {
     } catch (e) { console.error(e); }
 }
 
+function stripTags(html) {
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    return div.textContent || div.innerText || "";
+}
+
 function renderNotes() {
     const term = searchBar.value.toLowerCase();
     const order = sortOrder.value;
@@ -240,7 +252,7 @@ function renderNotes() {
 
     let filtered = allNotes.filter(n => 
         (n.title || '').toLowerCase().includes(term) || 
-        (n.body || '').toLowerCase().includes(term)
+        stripTags(n.body || '').toLowerCase().includes(term)
     );
 
     filtered.sort((a, b) => {
@@ -254,13 +266,14 @@ function renderNotes() {
         const isOwner = note.ownerId === currentUser.id;
         const card = document.createElement('div');
         card.className = 'note-card';
+        const plainBody = stripTags(note.body);
         card.innerHTML = `
             ${!isOwner ? `<div class="badge shared" title="Shared by ${note.ownerUsername}">Shared with me</div>` : '<div class="badge">My Note</div>'}
             <div class="note-actions">
                 ${isOwner ? '<button class="icon-btn edit-btn">✎</button><button class="icon-btn del-btn">🗑</button>' : '<button class="icon-btn view-btn">👁</button>'}
             </div>
             <h3>${note.title}</h3>
-            <p>${note.body.substring(0, 100)}${note.body.length > 100 ? '...' : ''}</p>
+            <p>${plainBody.substring(0, 100)}${plainBody.length > 100 ? '...' : ''}</p>
             <div class="attachments">
                 ${(note.attachments || []).map(a => `<img src="${a.url}" class="thumb">`).join('')}
             </div>
@@ -292,7 +305,7 @@ async function deleteNote(id) {
 
 btnSave.onclick = async () => {
     const title = noteTitleInput.value;
-    const body = noteBodyInput.value;
+    const body = noteBodyInput.innerHTML;
     if (!title) return alert('Title req');
 
     const data = { title, body, attachments: currentAttachments, sharedWith: selectedShareUsers };
@@ -359,4 +372,14 @@ noteBodyInput.onpaste = async (e) => {
     }
 };
 
+// Toolbar Logic
+document.querySelectorAll('#editor-toolbar button').forEach(btn => {
+    btn.onclick = (e) => {
+        const command = btn.getAttribute('data-command');
+        document.execCommand(command, false, null);
+        noteBodyInput.focus();
+    };
+});
+
 checkAuth();
+

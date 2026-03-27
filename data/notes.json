@@ -95,5 +95,15 @@
     ],
     "createdAt": "2026-03-25T21:44:18.473Z",
     "updatedAt": "2026-03-25T21:44:39.663Z"
+  },
+  {
+    "id": "70a5011d-42f3-4c9d-b87f-fe2d9240d20d",
+    "ownerId": "d62cdbf9-1852-45be-81a3-0897dc078253",
+    "title": "new note with html support - 1",
+    "body": "<b>djsakljkdla</b><div><b><br></b></div><div>dafda da fda fda dsa</div><div>da daf da</div><div>da fda fda d</div><div>das daf dasf dada</div>",
+    "attachments": [],
+    "sharedWith": [],
+    "createdAt": "2026-03-27T03:12:59.585Z",
+    "updatedAt": "2026-03-27T03:12:59.585Z"
   }
 ]
