@@ -266,14 +266,13 @@ function renderNotes() {
         const isOwner = note.ownerId === currentUser.id;
         const card = document.createElement('div');
         card.className = 'note-card';
-        const plainBody = stripTags(note.body);
         card.innerHTML = `
             ${!isOwner ? `<div class="badge shared" title="Shared by ${note.ownerUsername}">Shared with me</div>` : '<div class="badge">My Note</div>'}
             <div class="note-actions">
                 ${isOwner ? '<button class="icon-btn edit-btn">✎</button><button class="icon-btn del-btn">🗑</button>' : '<button class="icon-btn view-btn">👁</button>'}
             </div>
             <h3>${note.title}</h3>
-            <p>${plainBody.substring(0, 100)}${plainBody.length > 100 ? '...' : ''}</p>
+            <div class="note-card-content">${note.body}</div>
             <div class="attachments">
                 ${(note.attachments || []).map(a => `<img src="${a.url}" class="thumb">`).join('')}
             </div>
